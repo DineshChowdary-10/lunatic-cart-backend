@@ -32,17 +32,27 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // Allow local development and deployed frontend
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+            List.of(
+                "http://localhost:5173",
+                "https://lunatic-cart-frontend.vercel.app"
+            )
         );
 
+        // Allowed HTTP methods
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
         );
 
+        // Allowed request headers
         configuration.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
+            List.of("Authorization", "Content-Type")
         );
+
+        // Allow credentials and cache preflight response
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
@@ -61,10 +71,14 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
+
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+
             .authorizeHttpRequests(auth -> auth
+
+                // Public endpoints
                 .requestMatchers(
                     "/api/auth/register",
                     "/api/auth/login",
@@ -72,13 +86,19 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/v3/api-docs/**"
                 ).permitAll()
+
+                // Public product browsing
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/products",
                     "/api/products/**"
                 ).permitAll()
+
+                // All remaining endpoints require authentication
                 .anyRequest().authenticated()
             )
+
+            // JWT authentication filter
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class
